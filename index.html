@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octo2 Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        #conversation {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .logo {
+            width: 150px; /* Ajuste o tamanho conforme necessário */
+            height: auto;
+        }
+
+
+    .message {
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        max-width: 70%;
+    }
+
+   .user-message {
+    background-color: #DCF8C6 !important; /* Cor de fundo para mensagens do usuário */
+    /* Outros estilos */
+}
+
+.bot-message {
+    background-color: #ECECEC !important; /* Cor de fundo para mensagens do bot */
+    /* Outros estilos */
+}
+
+
+
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex flex-col items-center justify-center h-screen">
+        <h1 class="text-4xl font-bold mb-2">OctoTalk2</h1>
+        <img src="https://uploaddeimagens.com.br/images/004/712/783/original/WhatsApp_Image_2024-01-15_at_15.55.23.jpeg?1705341860" alt="Logo" class="logo mb-4">
+        <div class="bg-white p-6 rounded shadow w-full max-w-md">
+            <ul id="conversation" class="mb-4"></ul>
+            <div class="flex">
+                <input type="text" id="userInput" class="border flex-grow p-2 mr-2" placeholder="Digite sua mensagem...">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function queryHuggingFaceModel(message) {
+            const TOKEN = "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"; // Seu token
+            const MODEL_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-3B";
+
+            const response = await fetch(MODEL_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + TOKEN,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    inputs: {
+                        text: message,
+                    },
+                }),
+            });
+
+            const data = await response.json();
+            return data.generated_text;
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById("userInput");
+            const message = userInput.value;
+            userInput.value = '';
+
+            displayMessage('Você: ' + message);
+
+            const botResponse = await queryHuggingFaceModel(message);
+            typeMessage('Octo: ', botResponse);
+        }
+
+        function displayMessage(message, isUser) {
+    const conversation = document.getElementById("conversation");
+    const newMessage = document.createElement("li");
+    newMessage.classList.add('message');
+
+    // Aplica a classe correta com base em quem está enviando a mensagem
+    newMessage.classList.add(isUser ? 'user-message' : 'bot-message');
+    newMessage.textContent = message;
+    conversation.appendChild(newMessage);
+    conversation.scrollTop = conversation.scrollHeight;
+}
+
+function typeMessage(prefix, message, index = 0) {
+    const conversation = document.getElementById("conversation");
+    let typingMessage = conversation.querySelector('.typing');
+
+    if (!typingMessage) {
+        typingMessage = document.createElement("li");
+        typingMessage.classList.add('typing', 'message');
+
+        // Aplica a classe 'bot-message' se a mensagem é do bot
+        if (prefix.startsWith('Octo:')) {
+            typingMessage.classList.add('bot-message');
+        }
+
+        conversation.appendChild(typingMessage);
+    }
+
+    if (index < message.length) {
+        typingMessage.textContent = prefix + message.substring(0, index + 1);
+        setTimeout(() => typeMessage(prefix, message, index + 1), 50);
+    } else {
+        // Remove a classe 'typing' ao terminar de "digitar"
+        typingMessage.classList.remove('typing');
+    }
+}
+
+document.getElementById("userInput").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+    }
+});
+
+async function sendMessage() {
+    const userInput = document.getElementById("userInput");
+    const message = userInput.value.trim();  // Certifique-se de que a entrada não esteja vazia
+    if (!message) return;  // Não faça nada se a mensagem estiver vazia
+
+    userInput.value = '';
+    displayMessage('Você: ' + message, true); // Aqui, 'true' indica que é uma mensagem do usuário
+
+    const botResponse = await queryHuggingFaceModel(message);
+    typeMessage('Octo: ', botResponse); // Aqui, 'false' será aplicado implicitamente na função 'displayMessage' dentro de 'typeMessage'
+}
+
+    </script>
+</body>
+</html>
